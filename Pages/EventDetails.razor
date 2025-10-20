@@ -1,0 +1,72 @@
+@page "/events/{EventId:int}"
+@using Microsoft.AspNetCore.Components
+@inject BlazorPerformanceApp.Services.EventService EventService
+
+<h3>Event Details</h3>
+
+@if (notFound)
+{
+    <div class="alert alert-warning">Event not found. <NavLink href="/events">Back to event list</NavLink></div>
+}
+else
+{
+    <p>ID: @EventId</p>
+    <p>Name: @EventName</p>
+    <p>Date: @EventDate.ToShortDateString()</p>
+    <p>Location: @EventLocation</p>
+
+    <div>
+        <NavLink href="/events">Back to event list</NavLink> |
+        <NavLink href="/events/register">Register for this event</NavLink>
+    </div>
+}
+
+@code {
+    [Parameter]
+    public int EventId { get; set; }
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "EventName")]
+    public string EventName { get; set; } = string.Empty;
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "EventDate")]
+    public DateTime EventDate { get; set; } = DateTime.MinValue;
+
+    [Parameter]
+    [SupplyParameterFromQuery(Name = "EventLocation")]
+    public string EventLocation { get; set; } = string.Empty;
+
+    private bool notFound;
+
+    protected override void OnParametersSet()
+    {
+        notFound = false;
+
+        // If query params were provided, they populate the parameters.
+        // If not, try to load from the service. If still not found, show friendly message.
+        if (string.IsNullOrEmpty(EventName))
+        {
+            var ev = EventService.Get(EventId);
+            if (ev == null)
+            {
+                notFound = true;
+                return;
+            }
+
+            EventName = ev.Name;
+            EventDate = ev.Date;
+            EventLocation = ev.Location;
+        }
+
+        // If EventDate still not set (parsing failed), try service as fallback.
+        if (EventDate == DateTime.MinValue)
+        {
+            var ev = EventService.Get(EventId);
+            if (ev != null)
+            {
+                EventDate = ev.Date;
+            }
+        }
+    }
+}

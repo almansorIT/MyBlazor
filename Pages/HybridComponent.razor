@@ -1,0 +1,35 @@
+@inject ILogger<HybridComponent> Logger
+
+
+@if (Data == null)
+{
+    <p>Loading...</p>
+}
+else
+{
+    <ul>
+        @foreach (var item in Data)
+        {
+            <li>@item</li>
+        }
+    </ul>
+}
+
+@code {
+
+    private List<string>? Data;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Logger?.LogInformation("Fetching data...");
+        await Task.Delay(4000); // simulate 4-second fetch
+        Data = new List<string>
+        {
+            "Test Data 1",
+            "Test Data 2",
+            "Test Data 3"
+        };
+        Logger?.LogInformation("Data fetch completed.");
+    }
+
+}

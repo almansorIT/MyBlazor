@@ -1,0 +1,101 @@
+@page "/events/register"
+@page "/eventregistration"
+@using Microsoft.AspNetCore.Components.Forms
+@using System.ComponentModel.DataAnnotations
+@inject BlazorPerformanceApp.Services.EventService EventService
+@inject NavigationManager Navigation
+
+<h3>Register Event</h3>
+
+<EditForm Model="model" OnValidSubmit="RegisterEvent">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-2">
+        <label>Event Name</label><br />
+        <InputText @bind-Value="model.Name" placeholder="Event Name" class="form-control" />
+        <ValidationMessage For="@(() => model.Name)" />
+    </div>
+
+    <div class="mb-2">
+        <label>Event Date</label><br />
+        <InputDate @bind-Value="model.Date" class="form-control" />
+        <ValidationMessage For="@(() => model.Date)" />
+    </div>
+
+    <div class="mb-2">
+        <label>Event Location</label><br />
+        <InputText @bind-Value="model.Location" placeholder="Event Location" class="form-control" />
+        <ValidationMessage For="@(() => model.Location)" />
+    </div>
+
+    @if (!string.IsNullOrEmpty(submissionError))
+    {
+        <div class="text-danger mb-2">@submissionError</div>
+    }
+
+    <button class="btn btn-primary" type="submit" disabled="@isSubmitting">Submit</button>
+</EditForm>
+
+<p>
+    <NavLink href="/events">Back to list</NavLink>
+</p>
+
+@code {
+    private RegistrationModel model = new RegistrationModel();
+    private bool isSubmitting;
+    private string? submissionError;
+
+    public class RegistrationModel
+    {
+        [Required(ErrorMessage = "Event name is required")]
+        [StringLength(100, ErrorMessage = "Name too long (100 max)")]
+        public string Name { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Event date is required")]
+        public DateTime Date { get; set; } = DateTime.Today;
+
+        [Required(ErrorMessage = "Event location is required")]
+        [StringLength(200, ErrorMessage = "Location too long (200 max)")]
+        public string Location { get; set; } = string.Empty;
+    }
+
+    private void RegisterEvent()
+    {
+        // EditForm + DataAnnotations validated the model before this runs.
+        // Add extra defensive checks and handle service-side validation errors.
+        isSubmitting = true;
+        submissionError = null;
+
+        try
+        {
+            var name = model.Name?.Trim() ?? string.Empty;
+            var loc = model.Location?.Trim() ?? string.Empty;
+            var date = model.Date.Date;
+
+            // This may throw ArgumentException if inputs are invalid at service level.
+            var item = EventService.Add(name, date, loc);
+
+            var qName = Uri.EscapeDataString(item.Name);
+            var qDate = Uri.EscapeDataString(item.Date.ToString("o"));
+            var qLoc = Uri.EscapeDataString(item.Location);
+
+            // Navigate to details so user sees the newly added event
+            Navigation.NavigateTo($"/events/{item.Id}?EventName={qName}&EventDate={qDate}&EventLocation={qLoc}");
+        }
+        catch (ArgumentException ex)
+        {
+            submissionError = ex.Message;
+        }
+        catch (Exception ex)
+        {
+            // Generic fallback
+            submissionError = "An unexpected error occurred. Please try again.";
+            Console.Error.WriteLine(ex);
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+}

@@ -1,0 +1,76 @@
+@page "/events/card"
+@using System.ComponentModel.DataAnnotations
+@inject BlazorPerformanceApp.Services.EventService EventService
+@inject NavigationManager Navigation
+
+<h3>New Event</h3>
+
+<EditForm Model="model" OnValidSubmit="SaveEvent">
+    <DataAnnotationsValidator />
+    <ValidationSummary />
+
+    <div class="mb-2">
+        <label>Event Name</label><br />
+        <InputText @bind-Value="model.Name" class="form-control" />
+        <ValidationMessage For="@(()=> model.Name)" />
+    </div>
+
+    <div class="mb-2">
+        <label>Event Date</label><br />
+        <InputDate @bind-Value="model.Date" class="form-control" />
+        <ValidationMessage For="@(()=> model.Date)" />
+    </div>
+
+    <div class="mb-2">
+        <label>Event Location</label><br />
+        <InputText @bind-Value="model.Location" class="form-control" />
+        <ValidationMessage For="@(()=> model.Location)" />
+    </div>
+
+    <button class="btn btn-primary" type="submit">Save Event</button>
+</EditForm>
+
+@if (savedEvent != null)
+{
+    <div class="mt-3">
+        <h4>Saved</h4>
+        <p>ID: @savedEvent.Id</p>
+        <p>Name: @savedEvent.Name</p>
+        <p>Date: @savedEvent.Date.ToShortDateString()</p>
+        <p>Location: @savedEvent.Location</p>
+        <NavLink href="/events">View all events</NavLink>
+    </div>
+}
+
+@code {
+    private NewEventModel model = new();
+    private BlazorPerformanceApp.Services.EventItem? savedEvent;
+
+    public class NewEventModel
+    {
+        [Required(ErrorMessage = "Name is required")]
+        [StringLength(100, ErrorMessage = "Name too long (100 max)")]
+        public string Name { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Date is required")]
+        public DateTime Date { get; set; } = DateTime.Today;
+
+        [Required(ErrorMessage = "Location is required")]
+        [StringLength(200, ErrorMessage = "Location too long (200 max)")]
+        public string Location { get; set; } = string.Empty;
+    }
+
+    private void SaveEvent()
+    {
+        // Validation already enforced by EditForm/Annotations.
+        var item = EventService.Add(model.Name.Trim(), model.Date, model.Location.Trim());
+        savedEvent = item;
+
+        var name = Uri.EscapeDataString(item.Name);
+        var date = Uri.EscapeDataString(item.Date.ToString("o"));
+        var loc = Uri.EscapeDataString(item.Location);
+
+        // Navigate to details so user sees the newly added event
+        Navigation.NavigateTo($"/events/{item.Id}?EventName={name}&EventDate={date}&EventLocation={loc}");
+    }
+}

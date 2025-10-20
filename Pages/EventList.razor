@@ -1,0 +1,41 @@
+@page "/events"
+@inject BlazorPerformanceApp.Services.EventService EventService
+@using System.Globalization
+
+<h3>Events</h3>
+
+@if (snapshot == null || snapshot.Length == 0)
+{
+    <p>No events yet. <NavLink href="/events/register">Register one</NavLink>.</p>
+}
+else
+{
+    <ul>
+    @foreach (var e in snapshot)
+    {
+        <li @key="e.Id">
+            <strong>@e.Name</strong> — @e.Date.ToString("d", CultureInfo.CurrentCulture) (@e.Location)
+            &nbsp; <NavLink href="@DetailsLink(e.Id, e.Name, e.Date, e.Location)">View</NavLink>
+        </li>
+    }
+    </ul>
+}
+
+@code {
+    private BlazorPerformanceApp.Services.EventItem[] snapshot = Array.Empty<BlazorPerformanceApp.Services.EventItem>();
+
+    protected override void OnInitialized()
+    {
+        // Snapshot the array to avoid re-enumeration and help render stability.
+        snapshot = EventService.Events;
+    }
+
+    // Helper for building stable details URL with encoded query params
+    private string DetailsLink(int id, string name, DateTime date, string location)
+    {
+        var qName = Uri.EscapeDataString(name);
+        var qDate = Uri.EscapeDataString(date.ToString("o"));
+        var qLoc = Uri.EscapeDataString(location);
+        return $"/events/{id}?EventName={qName}&EventDate={qDate}&EventLocation={qLoc}";
+    }
+}
